@@ -1,0 +1,1 @@
+boss donot know whati am doing as expert whats our current situation so make something whihc things we are working and where we are for now and which is on low go head make a a simple static web app. using vanilla js with cdns to quick development. one hting current domain, upcoming tasks, working tasks. progress, requirements. 
