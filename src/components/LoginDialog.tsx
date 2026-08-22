@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Modal } from "./Modal";
 import { useApp } from "./AppProvider";
+import { getInput } from "@/lib/forms";
 
 export function LoginDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { login } = useApp();
@@ -13,18 +15,13 @@ export function LoginDialog({ open, onClose }: { open: boolean; onClose: () => v
     if (open) {
       // Clear any error left over from the last attempt, and focus the
       // email field — a reset-on-open, not state derived from props.
+      // The timeout waits one tick so the ref points at the freshly
+      // rendered input before we focus it.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(null);
       setTimeout(() => emailRef.current?.focus(), 0);
     }
   }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -32,8 +29,8 @@ export function LoginDialog({ open, onClose }: { open: boolean; onClose: () => v
     e.preventDefault();
     setBusy(true);
     const form = e.currentTarget;
-    const email = (form.elements.namedItem("email") as HTMLInputElement).value.trim();
-    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
+    const email = getInput(e, "email")?.value.trim() ?? "";
+    const password = getInput(e, "password")?.value ?? "";
 
     const err = await login(email, password);
     setBusy(false);
@@ -46,7 +43,7 @@ export function LoginDialog({ open, onClose }: { open: boolean; onClose: () => v
   }
 
   return (
-    <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <Modal open={open} onClose={onClose}>
       <div id="login">
         <div className="login-logo" aria-hidden="true">
           P
@@ -86,6 +83,6 @@ export function LoginDialog({ open, onClose }: { open: boolean; onClose: () => v
           </p>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }

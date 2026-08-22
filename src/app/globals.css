@@ -40,8 +40,6 @@ body {
 a { color: var(--wp-blue); font-weight: 500; }
 a:hover { color: var(--wp-blue-dark); }
 
-.hidden { display: none !important; }
-
 /* ===== Admin bar ===== */
 #wpadminbar {
   position: fixed;
@@ -147,7 +145,6 @@ a.ab-item:hover, button.ab-item:hover {
 .menu-item:hover .wp-menu-image,
 .menu-item.current .wp-menu-image { opacity: 1; }
 .wp-menu-image svg { width: 18px; height: 18px; }
-.wp-menu-short { display: none; }   /* mobile-only label */
 
 /* ===== Content ===== */
 #wpcontent {
@@ -157,7 +154,11 @@ a.ab-item:hover, button.ab-item:hover {
   display: flex;
   flex-direction: column;
 }
-#wpbody { flex: 1; }
+/* min-width:0 overrides the flex default of min-width:auto, which
+   otherwise refuses to let this column shrink below the intrinsic
+   content width of whatever's inside it (e.g. a wide table) — the
+   actual cause of tables silently overflowing past the page edge. */
+#wpbody { flex: 1; min-width: 0; }
 .wrap { margin: 10px 20px 0 2px; }  /* real wp-admin: fluid, no max-width */
 
 .page-title-row {
@@ -176,15 +177,6 @@ a.ab-item:hover, button.ab-item:hover {
   padding: 9px 0 4px;
 }
 .wp-header-end { visibility: hidden; margin: -2px 0 0; border: 0; }
-
-#wpfooter {
-  padding: 10px 20px;
-  color: var(--wp-muted);
-  font-size: 14px;
-  font-style: italic;
-  border-top: 1px solid var(--wp-border);
-  margin: 20px 20px 0 2px;
-}
 
 /* ===== Admin notices ===== */
 #notices { margin: 5px 0 15px; }
@@ -242,12 +234,25 @@ a.ab-item:hover, button.ab-item:hover {
 
 /* ===== List tables ===== */
 .wp-list-table {
-  width: 100%;
+  /* width:0 + min-width:100% (not width:100%) is the actual documented
+     fix for tables in a flex/grid ancestor: Chromium sizes a <table>'s
+     anonymous wrapper box from its own content first and only clamps
+     with min-width afterward, so plain width:100% can silently resolve
+     against the table's intrinsic content width instead of its grid
+     track — this was confirmed by direct measurement, not assumption. */
+  width: 100cqw;
+  table-layout: fixed;
   border-collapse: collapse;
   background: #fff;
   border: 1px solid var(--wp-border);
   box-shadow: 0 1px 1px rgba(0,0,0,.04);
   clear: both;
+}
+/* table-layout:fixed needs somewhere for long unbroken text (a domain
+   name, a filename) to actually wrap instead of forcing the column wide. */
+.wp-list-table td,
+.wp-list-table th {
+  overflow-wrap: anywhere;
 }
 .wp-list-table thead td,
 .wp-list-table thead th {
@@ -288,6 +293,23 @@ a.ab-item:hover, button.ab-item:hover {
 .row-actions a:hover { text-decoration: underline; }
 .row-actions .submitdelete { color: var(--wp-red); }
 tr:hover .row-actions, li:hover .row-actions { visibility: visible; }
+
+/* Row actions are real <button> elements now (not href="#" links), so
+   they need their button chrome stripped back down to look like text. */
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--wp-blue);
+  cursor: pointer;
+  text-decoration: none;
+}
+.link-button:hover { text-decoration: underline; }
+.link-button.submitdelete { color: var(--wp-red); }
+.row-actions .link-button { color: inherit; font-size: inherit; font-weight: inherit; }
+.row-actions .link-button.submitdelete { color: var(--wp-red); }
 
 .empty-state {
   background: #fff;
@@ -373,20 +395,27 @@ tr:hover .row-actions, li:hover .row-actions { visibility: visible; }
 }
 
 /* ===== Domains ===== */
-.domain-list { list-style: none; border-top: 1px solid #f0f0f1; }
-.domain-list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  border-bottom: 1px solid #f0f0f1;
-  font-size: 15px;
+/* Wide tables scroll inside their own box rather than overflowing the
+   page — the impressions column's header text is what pushes width. */
+/* display:grid + minmax(0,1fr) is the reliable fix for a wide child
+   (a table) refusing to respect a block/overflow-auto container's width —
+   grid tracks don't let a child's intrinsic content width leak outward
+   the way block formatting contexts sometimes do. */
+.table-scroll {
+  container-type: inline-size;
+  overflow-x: auto;
 }
-.domain-list li:last-child { border-bottom: none; }
-.domain-info { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-.domain-info strong { color: var(--wp-dark); font-weight: 700; }
-.domain-note { color: var(--wp-muted); font-size: 14px; font-weight: 500; }
+.col-impressions {
+  width: 140px;
+  text-align: right;
+}
+/* Only the numbers stay on one line — the header wraps if it needs to. */
+td.col-impressions {
+  white-space: nowrap;
+  color: var(--wp-dark);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 
 /* ===== Reports table (on Today) ===== */
 .reports-box { margin-top: 20px; }
@@ -434,7 +463,6 @@ tr:hover .row-actions, li:hover .row-actions { visibility: visible; }
 .button-primary:hover { background: var(--wp-blue-dark); border-color: var(--wp-blue-dark); color: #fff; }
 .button-primary:focus { box-shadow: 0 0 0 1px #fff, 0 0 0 3px var(--wp-blue); }
 .button-large { min-height: 32px; line-height: 2.30769231; padding: 0 12px; }
-.button.action { min-width: 60px; }
 
 /* ===== Inputs ===== */
 .regular-text, .input, .modal input[type="text"] {
@@ -585,9 +613,7 @@ tr:hover .row-actions, li:hover .row-actions { visibility: visible; }
     box-shadow: inset 0 3px 0 var(--wp-blue-light);
   }
   .wp-menu-image svg { width: 22px; height: 22px; }
-  .wp-menu-name { display: none; }
-  .wp-menu-short {
-    display: block;
+  .wp-menu-name {
     padding: 0 2px;
     width: 100%;
     overflow: hidden;
@@ -613,11 +639,30 @@ tr:hover .row-actions, li:hover .row-actions { visibility: visible; }
     border-top: none;
     padding: 4px 10px;
   }
+  /* Secondary columns become "LABEL    value" rows instead of a bare,
+     disconnected value floating under the primary column's text. */
+  .wp-list-table tbody td[data-label] {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .wp-list-table tbody td[data-label]::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--wp-muted);
+    flex-shrink: 0;
+  }
   .wp-list-table tbody tr {
     border-top: 1px solid var(--wp-border);
     padding: 8px 0;
   }
-  .col-order { width: auto; }
+  /* Row order is already implied by stacking order — a numbered row
+     just for "#" is clutter once the table is a list of cards. */
+  .col-order { display: none; }
   .row-actions { visibility: visible; }
   .regular-text { width: 100%; }
   .add-form .button { width: 100%; }
@@ -664,14 +709,6 @@ tr:hover .row-actions, li:hover .row-actions { visibility: visible; }
   transition: background-color 0.12s ease;
 }
 .wp-list-table tbody tr:hover {
-  background: #f0f6fb;
-}
-
-.domain-list li,
-.entry-list li {
-  transition: background-color 0.12s ease;
-}
-.domain-list li:hover {
   background: #f0f6fb;
 }
 

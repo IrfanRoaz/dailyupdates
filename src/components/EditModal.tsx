@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, type FormEvent } from "react";
+import { Modal } from "./Modal";
+import { getInput } from "@/lib/forms";
 
 export interface EditField {
   key: string;
@@ -21,36 +23,38 @@ export function EditModal({
   onCancel: () => void;
   onSubmit: (values: Record<string, string>) => void;
 }) {
+  const titleId = "edit-modal-title";
+
+  // Auto-focus the first input once the modal is in the DOM.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onCancel();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onCancel]);
+    document.querySelector<HTMLInputElement>(".modal input")?.focus();
+  }, [open, fields]);
 
   if (!open) return null;
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = e.currentTarget;
     const values: Record<string, string> = {};
     fields.forEach((f) => {
-      values[f.key] = (form.elements.namedItem(f.key) as HTMLInputElement).value.trim();
+      values[f.key] = getInput(e, f.key)?.value.trim() ?? "";
     });
     onSubmit(values);
   }
 
   return (
-    <div className="modal-backdrop" onClick={(e) => e.target === e.currentTarget && onCancel()}>
+    <Modal open={open} onClose={onCancel} labelledBy={titleId}>
       <div className="modal postbox">
         <div className="postbox-header">
-          <h2 className="hndle">{title}</h2>
+          <h2 id={titleId} className="hndle">
+            {title}
+          </h2>
         </div>
         <form className="inside" onSubmit={handleSubmit}>
           {fields.map((f) => (
             <label key={f.key}>
               {f.label}
-              <input name={f.key} defaultValue={f.value} autoFocus={f === fields[0]} />
+              <input name={f.key} defaultValue={f.value} />
             </label>
           ))}
           <div className="modal-actions">
@@ -63,6 +67,6 @@ export function EditModal({
           </div>
         </form>
       </div>
-    </div>
+    </Modal>
   );
 }

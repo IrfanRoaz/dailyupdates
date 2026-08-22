@@ -6,6 +6,7 @@ import { useApp } from "@/components/AppProvider";
 import { Loading } from "@/components/Loading";
 import { supabase } from "@/lib/supabase";
 import { EditModal, type EditField } from "@/components/EditModal";
+import { getInput } from "@/lib/forms";
 import type { Domain } from "@/lib/types";
 
 export default function DomainsPage() {
@@ -15,11 +16,12 @@ export default function DomainsPage() {
 
   async function handleAdd(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = e.currentTarget;
-    const name = (form.elements.namedItem("name") as HTMLInputElement).value.trim();
+    const name = getInput(e, "name")?.value.trim();
     if (!name) return;
-    const note = (form.elements.namedItem("note") as HTMLInputElement).value.trim();
+    const note = getInput(e, "note")?.value.trim() ?? "";
+    const form = e.currentTarget;
 
+    // sort_order at the end keeps the list order stable for new rows.
     if (
       await commit(
         "Could not add domain",
@@ -31,13 +33,20 @@ export default function DomainsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Move this item to the trash?")) return;
+    // Hard delete — there is no trash/undo on this dashboard.
+    if (!confirm("Delete this domain permanently?")) return;
     await commit("Could not delete", db.from("domains").delete().eq("id", id));
   }
 
   async function handleEditSubmit(values: Record<string, string>) {
     if (!editing) return;
-    if (await commit("Could not update", db.from("domains").update(values).eq("id", editing.id))) {
+    // The impressions field arrives as a string from the modal; coerce it
+    // here so the integer column never receives garbage.
+    const patch = {
+      ...values,
+      impressions_last_week: Number(values.impressions_last_week) || 0,
+    };
+    if (await commit("Could not update", db.from("domains").update(patch).eq("id", editing.id))) {
       setEditing(null);
     }
   }
@@ -46,6 +55,11 @@ export default function DomainsPage() {
     ? [
         { key: "name", label: "Domain", value: editing.name },
         { key: "note", label: "Note", value: editing.note },
+        {
+          key: "impressions_last_week",
+          label: "Impressions (Last Week)",
+          value: String(editing.impressions_last_week),
+        },
       ]
     : [];
 
@@ -65,40 +79,53 @@ export default function DomainsPage() {
           </span>
         </div>
         {domains.length ? (
-          <ul className="domain-list">
-            {domains.map((d) => (
-              <li key={d.id}>
-                <div className="domain-info">
-                  <strong>{d.name}</strong>
-                  {d.note && <span className="domain-note">{d.note}</span>}
-                </div>
-                {isAdmin && (
-                  <span className="row-actions">
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setEditing(d);
-                      }}
-                    >
-                      Edit
-                    </a>{" "}
-                    |{" "}
-                    <a
-                      href="#"
-                      className="submitdelete"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleDelete(d.id);
-                      }}
-                    >
-                      Trash
-                    </a>
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
+          <div className="table-scroll">
+          <table className="wp-list-table widefat fixed striped">
+            <thead>
+              <tr>
+                <th scope="col" className="manage-column column-primary">
+                  Domain
+                </th>
+                <th scope="col" className="manage-column col-impressions">
+                  Impressions (Last Week)
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {domains.map((d) => (
+                <tr key={d.id}>
+                  <td className="title column-primary">
+                    <strong>{d.name}</strong>
+                    {isAdmin && (
+                      <div className="row-actions">
+                        {/* Buttons, not href="#" links: these are actions,
+                            not navigation, so they get real button semantics. */}
+                        <button
+                          type="button"
+                          className="link-button"
+                          onClick={() => setEditing(d)}
+                        >
+                          Edit
+                        </button>{" "}
+                        |{" "}
+                        <button
+                          type="button"
+                          className="link-button submitdelete"
+                          onClick={() => handleDelete(d.id)}
+                        >
+                          Trash
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                  <td className="col-impressions" data-label="Impressions (Last Week)">
+                    {d.impressions_last_week.toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
         ) : (
           <p className="empty-state inside-pad">No domains set.</p>
         )}

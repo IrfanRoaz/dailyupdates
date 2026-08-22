@@ -7,7 +7,6 @@ const TABS = [
   {
     href: "/today",
     label: "Today",
-    short: "Today",
     icon: (
       <svg viewBox="0 0 20 20" fill="currentColor">
         <path d="M6 1v2H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2V1h-1.5v2h-5V1H6zM4 7h12v9H4V7zm2 2v2h2V9H6zm3.5 0v2h2V9h-2z" />
@@ -17,7 +16,6 @@ const TABS = [
   {
     href: "/domains",
     label: "Domains",
-    short: "Domains",
     icon: (
       <svg viewBox="0 0 20 20" fill="currentColor">
         <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm0 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9zm0 1.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6z" />
@@ -27,7 +25,6 @@ const TABS = [
   {
     href: "/upcoming",
     label: "Upcoming",
-    short: "Upcoming",
     icon: (
       <svg viewBox="0 0 20 20" fill="currentColor">
         <path d="M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm0 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zM9.25 5v5.5l4.2 2.5.75-1.3-3.45-2V5h-1.5z" />
@@ -54,7 +51,6 @@ export function MainNav() {
                 {tab.icon}
               </span>
               <span className="wp-menu-name">{tab.label}</span>
-              <span className="wp-menu-short">{tab.short}</span>
             </Link>
           );
         })}

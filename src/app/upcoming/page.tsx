@@ -6,6 +6,7 @@ import { useApp } from "@/components/AppProvider";
 import { Loading } from "@/components/Loading";
 import { supabase } from "@/lib/supabase";
 import { EditModal, type EditField } from "@/components/EditModal";
+import { getInput } from "@/lib/forms";
 import type { UpcomingTask } from "@/lib/types";
 
 export default function UpcomingPage() {
@@ -15,11 +16,12 @@ export default function UpcomingPage() {
 
   async function handleAdd(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = e.currentTarget;
-    const title = (form.elements.namedItem("title") as HTMLInputElement).value.trim();
+    const title = getInput(e, "title")?.value.trim();
     if (!title) return;
-    const notes = (form.elements.namedItem("notes") as HTMLInputElement).value.trim();
+    const notes = getInput(e, "notes")?.value.trim() ?? "";
+    const form = e.currentTarget;
 
+    // sort_order at the end keeps the list order stable for new rows.
     if (
       await commit(
         "Could not add task",
@@ -31,7 +33,8 @@ export default function UpcomingPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Move this item to the trash?")) return;
+    // Hard delete — there is no trash/undo on this dashboard.
+    if (!confirm("Delete this task permanently?")) return;
     await commit("Could not delete", db.from("upcoming_tasks").delete().eq("id", id));
   }
 
@@ -61,6 +64,7 @@ export default function UpcomingPage() {
       ) : (
       <>
       {upcoming.length ? (
+        <div className="table-scroll">
         <table className="wp-list-table widefat fixed striped">
           <thead>
             <tr>
@@ -80,52 +84,41 @@ export default function UpcomingPage() {
               <tr key={t.id}>
                 <td className="col-order">{i + 1}</td>
                 <td className="title column-primary">
+                  {/* Admins get a clickable title (opens the editor);
+                      non-admins get plain text so nothing looks clickable. */}
                   <strong>
-                    <a
-                      href="#"
-                      className="row-title"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (isAdmin) setEditing(t);
-                      }}
-                    >
-                      {t.title || "(no title)"}
-                    </a>
+                    {isAdmin ? (
+                      <button type="button" className="link-button row-title" onClick={() => setEditing(t)}>
+                        {t.title || "(no title)"}
+                      </button>
+                    ) : (
+                      t.title || "(no title)"
+                    )}
                   </strong>
                   {isAdmin && (
                     <div className="row-actions">
-                      <span className="edit">
-                        <a
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setEditing(t);
-                          }}
-                        >
-                          Edit
-                        </a>{" "}
-                        |{" "}
-                      </span>
-                      <span className="trash">
-                        <a
-                          href="#"
-                          className="submitdelete"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleDelete(t.id);
-                          }}
-                        >
-                          Trash
-                        </a>
-                      </span>
+                      {/* Buttons, not href="#" links: these are actions,
+                          not navigation, so they get real button semantics. */}
+                      <button type="button" className="link-button" onClick={() => setEditing(t)}>
+                        Edit
+                      </button>{" "}
+                      |{" "}
+                      <button
+                        type="button"
+                        className="link-button submitdelete"
+                        onClick={() => handleDelete(t.id)}
+                      >
+                        Trash
+                      </button>
                     </div>
                   )}
                 </td>
-                <td className="notes">{t.notes}</td>
+                <td className="notes" data-label="Notes">{t.notes}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       ) : (
         <p className="empty-state">No tasks found.</p>
       )}

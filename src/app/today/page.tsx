@@ -28,6 +28,9 @@ export default function TodayPage() {
 
   async function handleUpload(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // Capture the form before any await — React may have moved on from
+    // this event by the time the upload finishes.
+    const form = e.currentTarget;
     const file = fileRef.current?.files?.[0];
     if (!file) return notify("Choose a PDF first.", "warning");
     if (file.type !== "application/pdf") return notify("That file is not a PDF.", "error");
@@ -48,13 +51,16 @@ export default function TodayPage() {
       )
     );
     if (ok) {
-      e.currentTarget.reset();
+      form.reset();
       notify(report ? "Report replaced." : "Report uploaded.");
     }
   }
 
   async function handleRemove() {
     if (!report || !confirm("Remove the report for this day?")) return;
+    // NOTE: storage and DB deletes are not atomic — the file is removed
+    // first so a failed row delete at least leaves no orphaned blob
+    // serving stale data; the row would still point at a dead path.
     const rm = await db.storage.from(BUCKET).remove([report.pdf_path]);
     if (rm.error) return notify(`Could not delete file: ${rm.error.message}`, "error");
     if (await commit("Could not remove report", db.from("day_reports").delete().eq("day", selectedDay))) {
@@ -70,9 +76,12 @@ export default function TodayPage() {
 
   // Storage public URLs are CDN-cached and the path is stable per day, so
   // without a cache-buster a replacement upload would keep serving the
-  // old file. uploaded_at changes on every upsert, so it's a good key.
+  // old file. uploaded_at changes on every upsert, so it's a good key
+  // (falls back to the day itself for rows that somehow lack a timestamp).
   const pdfUrl = report
-    ? `${db.storage.from(BUCKET).getPublicUrl(report.pdf_path).data.publicUrl}?v=${encodeURIComponent(report.uploaded_at)}`
+    ? `${db.storage.from(BUCKET).getPublicUrl(report.pdf_path).data.publicUrl}?v=${encodeURIComponent(
+        report.uploaded_at ?? report.day
+      )}`
     : null;
 
   return (
@@ -81,6 +90,7 @@ export default function TodayPage() {
         <h1 className="wp-heading-inline">Today</h1>
         <div className="day-nav">
           <select
+            id="day-picker"
             aria-label="Select a day"
             value={selectedDay}
             onChange={(e) => setSelectedDay(e.target.value)}
@@ -97,6 +107,7 @@ export default function TodayPage() {
           {isAdmin && (
             <input
               type="date"
+              id="day-custom"
               name="custom-day"
               aria-label="Pick any date to upload or replace its report"
               onChange={handleCustomDate}
@@ -156,6 +167,7 @@ export default function TodayPage() {
           </span>
         </div>
         {historyDays.length ? (
+          <div className="table-scroll">
           <table className="wp-list-table widefat fixed striped">
             <thead>
               <tr>
@@ -177,19 +189,14 @@ export default function TodayPage() {
                 return (
                   <tr key={day}>
                     <td className="title column-primary">
-                      <a
-                        href="#"
-                        className="row-title"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setSelectedDay(day);
-                        }}
-                      >
+                      {/* Button, not href="#": this selects a day, it
+                          doesn't navigate anywhere. */}
+                      <button type="button" className="link-button row-title" onClick={() => setSelectedDay(day)}>
                         {formatDay(day)} {rel && <em className="history-rel-inline">{rel}</em>}
-                      </a>
+                      </button>
                     </td>
-                    <td className="notes">{r.file_name || "report.pdf"}</td>
-                    <td className="col-uploaded">
+                    <td className="notes" data-label="File">{r.file_name || "report.pdf"}</td>
+                    <td className="col-uploaded" data-label="Uploaded">
                       {r.uploaded_at ? new Date(r.uploaded_at).toLocaleDateString() : "—"}
                     </td>
                   </tr>
@@ -197,6 +204,7 @@ export default function TodayPage() {
               })}
             </tbody>
           </table>
+          </div>
         ) : (
           <p className="empty-state">No reports uploaded yet.</p>
         )}

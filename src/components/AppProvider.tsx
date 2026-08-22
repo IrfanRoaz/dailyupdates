@@ -87,17 +87,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loading: false,
     });
 
-    const missing = [reportRes.error, domRes.error, upRes.error].some(
-      (e) => e?.code === "PGRST205"
-    );
-    for (const [label, error] of [
+    // PGRST205 = table doesn't exist yet; one warning covers all of them
+    // (they're created together by final-setup.sql).
+    const results = [
+      ["dashboard_meta", metaRes.error],
       ["day_reports", reportRes.error],
       ["domains", domRes.error],
       ["upcoming_tasks", upRes.error],
-    ] as const) {
-      if (error && error.code !== "PGRST205") notify(`Could not load ${label}: ${error.message}`, "error");
+    ] as const;
+    if (results.some(([, error]) => error?.code === "PGRST205")) {
+      notify("Tables missing — run final-setup.sql in the Supabase SQL editor.", "warning");
+    } else {
+      for (const [label, error] of results) {
+        if (error) notify(`Could not load ${label}: ${error.message}`, "error");
+      }
     }
-    if (missing) notify("Tables missing — run final-setup.sql in the Supabase SQL editor.", "warning");
   }, [db, notify]);
 
   const commit = useCallback(
@@ -113,8 +117,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const confirmAdmin = useCallback(async () => {
     const { data, error } = await db.rpc("is_admin");
     if (error) {
+      // Fail open on the UI flag only: RLS (not this boolean) is what
+      // actually blocks writes, so a broken RPC just means admin controls
+      // may render and then error visibly instead of hiding the app.
       console.warn("is_admin() unavailable:", error.message);
-      return true; // RLS still blocks real writes either way
+      return true;
     }
     return data === true;
   }, [db]);
