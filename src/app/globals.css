@@ -403,6 +403,8 @@ tr:hover .row-actions, li:hover .row-actions { visibility: visible; }
    the way block formatting contexts sometimes do. */
 .table-scroll {
   container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   overflow-x: auto;
 }
 .col-impressions {

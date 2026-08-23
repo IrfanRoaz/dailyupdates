@@ -65,7 +65,7 @@ export default function UpcomingPage() {
       <>
       {upcoming.length ? (
         <div className="table-scroll">
-        <table className="wp-list-table widefat fixed striped">
+        <table className="wp-list-table widefat striped">
           <thead>
             <tr>
               <th scope="col" className="manage-column col-order">
