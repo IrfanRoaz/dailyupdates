@@ -24,19 +24,23 @@ One honest note: online betting rules are different in every country, and in Pak
 
 This is the easy part. It takes about two minutes.
 
-**Step 1.** Open the **Google Play Store** on your phone.
+**The quickest way:** Open this link on your Android phone and it will take you straight to the app page on the Play Store:
 
-**Step 2.** Tap the search bar at the top and type **BetPro**.
+👉 [Download BetPro from Google Play Store](https://play.google.com/store/apps/details?id=com.betpro.exchange.app)
 
-**Step 3.** Look for the right app in the results. Check the name carefully. Fake apps with similar names exist, so do not tap the first thing you see without looking.
+**Step 1.** Tap the link above. The **Google Play Store** will open on your phone.
 
-**Step 4.** Tap **Install** and wait. When it finishes, the button changes to **Open**.
+**Step 2.** Check the app page. Make sure the name says **BetPro**. Fake apps with similar names exist, so always look before you install.
 
-**Step 5.** Tap **Open**, or find the BetPro icon on your home screen.
+**Step 3.** Tap **Install** and wait. When it finishes, the button changes to **Open**.
+
+**Step 4.** Tap **Open**, or find the BetPro icon on your home screen.
 
 That's it. The app is on your phone.
 
-> **Tip:** If you cannot find the app in your Play Store, do not panic and do not download it from random websites or WhatsApp links. Files from unknown places can steal your information. Only use the official source.
+**Prefer to search yourself?** Open the Play Store, type **BetPro** in the search bar at the top, and pick the app that matches the page from the link above.
+
+> **Tip:** Do not download the app from random websites or WhatsApp links. Files from unknown places can steal your information. Only use the Play Store link above.
 
 ---
 
