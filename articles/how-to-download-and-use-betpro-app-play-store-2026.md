@@ -194,7 +194,7 @@ Stop and contact support from inside the app. Do not trust anyone who messages y
 
 ---
 
-## Final Words
+## Quick Recap
 
 Downloading and using the BetPro app is simple once you know the steps: install it from the Play Store, make your account, add a small deposit, and learn the dashboard before doing anything else. When you want to cash out, send a withdrawal request and wait for it to be approved.
 
